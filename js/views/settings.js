@@ -1,6 +1,7 @@
 // Settings: preferences summary (edit = the setup quiz), Gemini key + model,
 // appearance, backup / restore / reset, install and updates.
-import { state, on, saveSettings, getApiKey, setApiKey, exportBackup, importBackup, resetAll, DEFAULT_MODEL } from '../store.js';
+import { state, on, saveSettings, getApiKey, setApiKey, exportBackup, importBackup, resetAll, getRecipe, DEFAULT_MODEL } from '../store.js';
+import { PHOTOS } from '../data/photos.js';
 import { DIETS, ALLERGENS, EQUIPMENT, VIBES } from '../data/ingredients.js';
 import { storeFor } from '../data/stores.js';
 import { listModels } from '../ai.js';
@@ -89,6 +90,7 @@ export function openSettings({ focus = null } = {}) {
         ${inst === 'ios' ? html`<div class="row"><span class="row-icon">${icon('phone-app')}</span><div class="row-main"><div class="row-title">Install on iPhone or iPad</div><div class="row-sub" style="white-space:normal">In Safari tap Share then “Add to Home Screen”.</div></div></div>` : ''}
         ${inst === 'installed' ? html`<div class="row"><span class="row-icon">${icon('check')}</span><div class="row-main"><div class="row-title">Installed</div><div class="row-sub">Running as an app</div></div></div>` : ''}
         ${action('update', 'refresh', 'Check for updates', `Version ${APP_VERSION}`)}
+        ${action('credits', 'image', 'Photo credits', 'Recipe photos from Wikimedia Commons photographers')}
       </div></section>
       <p class="hint" style="margin:14px 4px 4px;line-height:1.6">Recipes, prices and nutrition are estimates. Always check allergen labels. Your data stays on this device.</p>`);
     showStorage();
@@ -152,6 +154,7 @@ export function openSettings({ focus = null } = {}) {
         }
         break;
       case 'install': await promptInstall(); render(); break;
+      case 'credits': openCredits(); break;
       case 'update': {
         setBusy(b, true);
         try { toast((await checkForUpdate()) ? 'Update downloading. It applies next time you open Larder.' : 'You’re on the latest version.'); } catch { toast('Couldn’t check for updates.', { tone: 'error' }); }
@@ -182,6 +185,23 @@ export function openSettings({ focus = null } = {}) {
   render();
   focusField(s, focus);
   return s;
+}
+
+function openCredits() {
+  const rows = Object.entries(PHOTOS)
+    .map(([id, p]) => ({ id, p, name: getRecipe(id)?.name || id }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+  openSheet({
+    title: 'Photo credits',
+    subtitle: 'Openly licensed photos from Wikimedia Commons',
+    size: 'full',
+    body: html`<p class="hint" style="margin-bottom:10px">Photos were cropped and resized for the app. Share-alike (CC BY-SA) photos are shared under the same license.</p>
+      <div class="list-plain">${rows.map(({ id, p, name }) => html`<div class="row">
+        <img class="photo sm" src="${p.src}" alt="" loading="lazy">
+        <div class="row-main"><div class="row-title">${name}</div>
+          <div class="row-sub" style="white-space:normal"><a href="${p.page}" target="_blank" rel="noopener">${p.author}</a> · ${p.licenseUrl ? html`<a href="${p.licenseUrl}" target="_blank" rel="noopener">${p.license}</a>` : p.license}</div></div>
+      </div>`)}</div>`,
+  });
 }
 
 function focusField(s, focus) {

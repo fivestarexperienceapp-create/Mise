@@ -43,7 +43,7 @@ export function openSwap(weekKey, day) {
   function option(r, reasons, fit) {
     return html`<div class="swap-opt">
       <button type="button" class="row-hit" data-pick="${r.id}">
-        ${tile(r, 'sm')}
+        ${tile(r, 'md')}
         <div class="row-main"><div class="row-title" style="white-space:normal">${r.name}</div>${metaLine(r)}
           ${reasons.length || !fit.ok ? html`<div class="reason-row">${!fit.ok ? html`<span class="badge" style="background:var(--warn-soft);color:var(--warn-ink)">${fit.reasons[0]}</span>` : ''}${reasons.map((x) => html`<span class="badge badge--sage">${x}</span>`)}</div>` : ''}
         </div>
@@ -111,7 +111,7 @@ export function openAIChef({ weekKey = null, day = null, pickMode = false } = {}
     function card(r) {
       const fit = suitability(r);
       return html`<div class="card card-pad" style="display:grid;gap:10px">
-        <div class="row-flex" style="align-items:flex-start">${tile(r, 'sm')}<div class="row-main"><div class="row-title" style="white-space:normal">${r.name}</div>${metaLine(r)}</div></div>
+        <div class="row-flex" style="align-items:flex-start">${tile(r, 'md')}<div class="row-main"><div class="row-title" style="white-space:normal">${r.name}</div>${metaLine(r)}</div></div>
         ${r.blurb ? html`<p class="muted" style="font-size:14px">${r.blurb}</p>` : ''}
         ${!fit.ok ? html`<div class="callout callout--warn">${icon('alert')}<div>${fit.reasons.join(' · ')}</div></div>` : ''}
         <div class="row-flex"><button class="btn btn-secondary btn-sm" data-view="${r.id}">View recipe</button>

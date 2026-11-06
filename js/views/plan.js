@@ -6,7 +6,7 @@ import { html, setHTML, plural, avg } from '../utils.js';
 import { icon, actionSheet, toast, confirmDialog, emptyArt } from '../ui.js';
 import { fmtMoney } from '../units.js';
 import { tile, metaLine, DAY_NAMES, DAY_SHORT } from './common.js';
-import { openRecipe } from './recipe.js';
+import { openRecipe, openCook } from './recipe.js';
 import { openSwap, openAIChef } from './swap.js';
 import { openSettings } from './settings.js';
 import { goTab } from '../router.js';
@@ -71,6 +71,7 @@ function render() {
         <div class="label">${range}<small>${plural(p.people, 'person', 'people')} · ${plural(p.days.length, 'dinner')}</small></div>
         <button class="icon-btn filled" data-act="next" aria-label="Next week" ${week >= shiftWeek(thisWeek(), 4) ? 'disabled' : ''}>${icon('chevron-right')}</button>
       </div>
+      ${weekStrip(slots, isCurrent, todayIdx)}
 
       ${!slots.length ? html`
         <div class="card card-pad" style="text-align:center;padding:26px 18px">
@@ -108,32 +109,47 @@ function render() {
     </div>`);
 }
 
+function weekStrip(slots, isCurrent, todayIdx) {
+  return html`<div class="week-strip" aria-label="Nights this week">${[0, 1, 2, 3, 4, 5, 6].map((d) => {
+    const s = slots.find((x) => x.day === d);
+    const st = s ? s.status : state.profile.days.includes(d) ? 'empty' : 'off';
+    const label = s ? `${DAY_NAMES[d]}: ${getRecipe(s.recipeId)?.name || 'meal'}${s.status === 'cooked' ? ', cooked' : s.status === 'skipped' ? ', skipped' : ''}` : `${DAY_NAMES[d]}: no dinner planned`;
+    return html`<button type="button" class="ws-day ws-${st} ${isCurrent && d === todayIdx ? 'is-today' : ''}" data-act="jump" data-day="${d}" aria-label="${label}">
+      <b>${DAY_SHORT[d].slice(0, 2)}</b><span>${dayDate(week, d).getDate()}</span><i aria-hidden="true"></i></button>`;
+  })}</div>`;
+}
+
 function dayCard(d, slot, isToday) {
-  const date = dayDate(week, d).getDate();
-  const label = html`<div class="day-label ${isToday ? 'is-today' : ''}"><b>${DAY_SHORT[d]}</b><span>${date}</span></div>`;
+  const chip = html`<span class="day-chip ${isToday ? 'is-today' : ''}"><b>${DAY_SHORT[d]}</b><span>${dayDate(week, d).getDate()}</span></span>`;
   if (!slot) {
-    return html`<div class="day-card">${label}<button class="day-empty" data-act="fill" data-day="${d}"><span class="tile-emoji sm">＋</span>Add a dinner</button></div>`;
+    return html`<button type="button" class="meal-empty" id="night-${d}" data-act="fill" data-day="${d}">${chip}<span>${icon('plus')} Add a dinner for ${DAY_NAMES[d]}</span></button>`;
   }
   const r = getRecipe(slot.recipeId);
-  if (!r) return html`<div class="day-card">${label}<button class="day-empty" data-act="fill" data-day="${d}">Recipe missing. Tap to choose another.</button></div>`;
-  const cls = slot.status === 'cooked' ? 'is-cooked' : slot.status === 'skipped' ? 'is-skipped' : '';
-  return html`<div class="day-card ${cls}">
-    ${label}
-    <button class="day-main" data-act="open" data-day="${d}" aria-label="${DAY_NAMES[d]}: ${r.name}">
-      ${tile(r, 'sm')}
-      <div class="row-main">
-        <div class="row-title">${r.name}</div>
-        ${slot.status === 'skipped' ? html`<div class="meta-line"><span>Skipped. Not on your list</span></div>` : metaLine(r)}
-        ${slot.status === 'cooked' ? html`<span class="status-pill">${icon('check')} Cooked</span>` : ''}
-        ${slot.locked && slot.status !== 'cooked' ? html`<span class="status-pill lock">${icon('lock')} Locked</span>` : ''}
-        ${slot.servings !== state.profile.people ? html`<span class="status-pill lock">${icon('users')} ${slot.servings}</span>` : ''}
-      </div>
+  if (!r) return html`<button type="button" class="meal-empty" id="night-${d}" data-act="fill" data-day="${d}">${chip}<span>Recipe missing. Tap to choose another</span></button>`;
+  const cooked = slot.status === 'cooked';
+  const cls = cooked ? 'is-cooked' : slot.status === 'skipped' ? 'is-skipped' : '';
+  return html`<article class="meal-card ${cls}" id="night-${d}">
+    <button type="button" class="meal-media" data-act="open" data-day="${d}" aria-label="Open ${r.name}">
+      ${tile(r, 'cover')}
+      ${chip}
+      <span class="meal-flags">
+        ${cooked ? html`<span class="flag-pill good">${icon('check')} Cooked</span>` : ''}
+        ${slot.locked && !cooked ? html`<span class="flag-pill">${icon('lock')} Locked</span>` : ''}
+        ${slot.status === 'skipped' ? html`<span class="flag-pill">${icon('skip')} Skipped</span>` : ''}
+      </span>
     </button>
-    <div class="day-actions">
-      <button class="icon-btn" data-act="swap" data-day="${d}" aria-label="Swap ${DAY_NAMES[d]}" title="Swap" ${slot.status === 'cooked' ? 'disabled' : ''}>${icon('shuffle')}</button>
-      <button class="icon-btn" data-act="more" data-day="${d}" aria-label="More options for ${DAY_NAMES[d]}" title="More">${icon('more')}</button>
+    <div class="meal-body">
+      <button type="button" class="meal-title" data-act="open" data-day="${d}">${r.name}</button>
+      ${slot.status === 'skipped' ? html`<div class="meta-line"><span>Not on your shopping list</span></div>` : metaLine(r)}
+      <div class="meal-actions">
+        <button type="button" class="btn btn-secondary btn-sm" data-act="swap" data-day="${d}" ${cooked ? 'disabled' : ''}>${icon('shuffle')} Swap</button>
+        <button type="button" class="btn btn-secondary btn-sm" data-act="cook" data-day="${d}" ${slot.status === 'skipped' ? 'disabled' : ''}>${icon('chef')} Cook</button>
+        ${slot.servings !== state.profile.people ? html`<span class="badge" title="Servings">${icon('users')} ${slot.servings}</span>` : ''}
+        <span class="spacer"></span>
+        <button type="button" class="icon-btn filled" data-act="more" data-day="${d}" aria-label="More options for ${DAY_NAMES[d]}" title="More">${icon('more')}</button>
+      </div>
     </div>
-  </div>`;
+  </article>`;
 }
 
 function generate({ keepAll = false } = {}) {
@@ -175,6 +191,17 @@ async function onClick(e) {
     case 'pick-own': goTab('recipes'); toast('Tap a recipe, then “Add to plan”.', { iconName: 'book' }); break;
     case 'shop': goTab('shop'); break;
     case 'open': if (slot) openRecipe(slot.recipeId, { weekKey: week, day: d, servings: slot.servings }); break;
+    case 'cook': {
+      const r = slot && getRecipe(slot.recipeId);
+      if (r) openCook(r, slot.servings, { onCooked: () => updateSlot(week, d, { status: 'cooked' }) });
+      break;
+    }
+    case 'jump': {
+      const card = root.querySelector(`#night-${d}`);
+      if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      else openSwap(week, d);
+      break;
+    }
     case 'swap': case 'fill': openSwap(week, d); break;
     case 'add-night': {
       const free = [0, 1, 2, 3, 4, 5, 6].filter((x) => !plan?.slots.some((s) => s.day === x));

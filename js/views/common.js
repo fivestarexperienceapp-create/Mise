@@ -1,5 +1,6 @@
 // Shared bits for rendering recipes consistently across views.
 import { state } from '../store.js';
+import { PHOTOS } from '../data/photos.js';
 import { html, raw } from '../utils.js';
 import { icon } from '../ui.js';
 import { totalTime, servingCost } from '../planner.js';
@@ -13,7 +14,21 @@ export function hueFor(r) {
   return h;
 }
 
-export const tile = (r, size = '') => html`<span class="tile-emoji ${size}" style="--h:${hueFor(r)}" aria-hidden="true">${r.emoji || '🍽️'}</span>`;
+export const photoFor = (r) => PHOTOS[r?.id] || null;
+
+// Recipe image: the bundled photo when there is one, otherwise an emoji tile
+// (AI-created and imported recipes). size: '' | 'sm' | 'md' | 'lg' | 'cover'
+export function tile(r, size = '') {
+  const p = photoFor(r);
+  if (p) return html`<img class="photo ${size}" src="${p.src}" alt="${r.name}" loading="lazy" decoding="async" width="800" height="600">`;
+  return html`<span class="tile-emoji ${size}" style="--h:${hueFor(r)}" role="img" aria-label="${r.name}">${r.emoji || '🍽️'}</span>`;
+}
+
+export function photoCredit(r) {
+  const p = photoFor(r);
+  if (!p) return '';
+  return html`<p class="photo-credit">Photo: <a href="${p.page}" target="_blank" rel="noopener">${p.author}</a>${p.licenseUrl ? html`, <a href="${p.licenseUrl}" target="_blank" rel="noopener">${p.license}</a>` : html`, ${p.license}`}, via Wikimedia Commons</p>`;
+}
 
 export function fmtTime(min) {
   if (min < 60) return `${min} min`;

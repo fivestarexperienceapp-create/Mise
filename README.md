@@ -13,6 +13,7 @@ It is plain HTML, CSS and JavaScript (ES modules) with **no build step**: push t
 | | |
 |---|---|
 | **Setup quiz** | Region and supermarket (UK or US chains), household size, which nights to plan, weekly budget, diets (vegetarian, vegan, pescatarian, gluten-free, dairy-free, no pork, no red meat, lower carb), 13 allergens, kitchen kit (hob, oven, air fryer, microwave, slow cooker, grill), effort level, meal styles, calorie target and pantry staples. Editable any time in Settings. |
+| **Photo-first layout** | Every built-in recipe has a real food photo. The Plan tab shows a seven-day strip (planned, cooked, skipped and today at a glance) above a large photo card for each night with one-tap **Swap** and **Cook**. Recipes is a two-column photo grid, and each recipe opens on a full-width photo. Photos are openly licensed from Wikimedia Commons and credited under each photo, in **Settings → Photo credits** and in `CREDITS.md`. |
 | **Weekly plan** | Generates dinners for your chosen nights. Every meal satisfies *all* selected diets and allergen exclusions, fits your kit (with air-fryer, microwave or hob alternatives where they work), favours your styles and favourites, avoids repeats from the last two weeks, varies proteins and cuisines, and stays under budget (it swaps pricier meals for cheaper matches when needed). A budget meter shows estimated spend, average calories and cost per serving. |
 | **Swap, lock, cook, skip** | Swap any night from ranked suggestions that explain why ("uses your spinach", "reuses peppers", "saves £1.80"), or search everything. Lock meals so a new plan keeps them, mark meals cooked (shown clearly on the card), skip nights (removed from the list), change servings per meal, or tell it never to suggest a dish again. Plan this week and up to four weeks ahead. |
 | **Shopping list** | One list merged from every planned meal, scaled to servings, rounded up to whole packs and items, minus your pantry, grouped by aisle in your store's typical order, with estimated prices and which nights use each item. Cupboard staples sit in their own "check you have these" section. Tick-off progress, your own extras, a **lock** so menu edits can't change it unexpectedly, and **copy/share as plain text** for any notes or list app. |
@@ -34,6 +35,8 @@ larder/
 ├── css/base.css            UI kit: layout, buttons, forms, sheets, toasts, camera
 ├── css/app.css             Theme tokens (light/dark) + meal-planner components
 ├── icons/                  App icons (SVG sources + PNG sizes)
+├── img/recipes/            45 recipe photos (800×600 JPEG, ~4 MB total)
+├── CREDITS.md              Photographer and license for every photo
 ├── js/
 │   ├── app.js              Bootstrap, theme, first-run setup, shortcuts
 │   ├── router.js           Hash tabs: #/plan #/shop #/recipes #/pantry
@@ -46,6 +49,7 @@ larder/
 │   ├── data/
 │   │   ├── ingredients.js  ~110 ingredients: aisle, pack size, prices, diet & allergen flags
 │   │   ├── recipes.js      Recipe library
+│   │   ├── photos.js       Recipe id → photo file, author, license, source page
 │   │   └── stores.js       Supermarkets, price index, aisle order
 │   └── views/              onboarding, plan, swap, recipe (+ cook mode), shop,
 │                           recipes, pantry, ai-flows (camera), settings, common
@@ -125,6 +129,7 @@ Everything (profile, plans, lists, pantry, favourites, your recipes) stays on th
 ## Customise
 
 - **Recipes:** add objects to `js/data/recipes.js` (quantities per serving, using ingredient ids from `ingredients.js`). Diet labels, allergens, costs and the shopping list are all derived automatically.
+- **Photos:** save a 4:3 JPEG (800×600 works well) to `img/recipes/<recipe-id>.jpg`, add an entry with its author and license to `js/data/photos.js` and a row to `CREDITS.md`, then add the file to `PHOTOS` in `sw.js` and bump `VERSION`. Recipes without a photo (including AI-created and imported ones) show a coloured emoji tile instead.
 - **Ingredients & prices:** `js/data/ingredients.js`. **Stores:** `js/data/stores.js`.
 - **Theme:** tokens at the top of `css/app.css`. **Icons:** `icons/icon.svg`, `icons/maskable.svg`.
 - **AI prompts and schemas:** `js/ai.js`.
@@ -141,4 +146,6 @@ Everything (profile, plans, lists, pantry, favourites, your recipes) stays on th
 
 ## License
 
-Add a license of your choice before publishing.
+Add a license of your choice for the code before publishing.
+
+The photos in `img/recipes/` are **not** covered by that license. Each one keeps its own Creative Commons or public-domain license, listed in `CREDITS.md`. CC BY and CC BY-SA photos require the credit to stay visible, so keep the credit line under each photo and the Photo credits screen if you redistribute the app. Don't replace them with photos from other apps or stores unless you have the rights.

@@ -5,7 +5,7 @@ import { suitability, methodFor, vibeLabels, dietLabels, servingCost, totalTime 
 import { html, setHTML, plural, vibrate } from '../utils.js';
 import { icon, openSheet, actionSheet, toast, confirmDialog, pushOverlay, closeOverlay } from '../ui.js';
 import { fmtLine, fmtMoney } from '../units.js';
-import { tile, fmtTime, DAY_NAMES, heartIcon } from './common.js';
+import { tile, photoCredit, fmtTime, DAY_NAMES, heartIcon } from './common.js';
 
 export function openRecipe(id, { weekKey = null, day = null, servings = null } = {}) {
   const r = getRecipe(id);
@@ -20,8 +20,9 @@ export function openRecipe(id, { weekKey = null, day = null, servings = null } =
     const fav = state.favorites.includes(r.id);
     const slot = weekKey != null && day != null ? getPlan(weekKey)?.slots.find((s) => s.day === day) : null;
     setHTML(sheet.body, html`
-      ${tile(r, 'lg')}
-      ${r.blurb ? html`<p class="muted" style="margin-top:12px;font-size:15px;line-height:1.5">${r.blurb}</p>` : ''}
+      <div class="hero">${tile(r, 'lg')}</div>
+      ${photoCredit(r)}
+      ${r.blurb ? html`<p class="muted" style="margin-top:10px;font-size:15px;line-height:1.5">${r.blurb}</p>` : ''}
       <div class="r-meta">
         <span class="badge">${icon('clock')} ${fmtTime(totalTime(r))}${r.prep ? ` · ${r.prep} min prep` : ''}</span>
         ${r.n?.kcal ? html`<span class="badge">${icon('flame')} ${r.n.kcal} kcal</span>` : ''}
